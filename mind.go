@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+	"unicode"
 
 	"github.com/gorilla/websocket"
 )
@@ -97,19 +98,20 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("upgraded to websocket")
 	m := Mind{1000}
 	i := 0
-	msg := ""
+	runes := ""
 	for {
 		if i%100 == 0 {
 			if i%10000 == 0 {
-				log.Println(msg)
+				log.Println(runes)
 			}
-			msg = ""
+			runes = ""
 		}
-		// time.Sleep(time.Millisecond * 1)
 		time.Sleep(time.Nanosecond * 1000 * 10)
-		// log.Printf("%+v: %q\n", m, string(m.x*'.'))
 		m.change()
-		msg += string(m.x * '.')
+		r := m.x * '.'
+		if unicode.IsPrint(rune(r)) {
+			runes += string(r)
+		}
 		msg := []byte(fmt.Sprintf("%d", m.x))
 		err = conn.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
