@@ -20,43 +20,65 @@ type Mind struct {
 }
 
 const IndexHTML = `
-<html>
+<!DOCTYPE html>
 <head>
+<style>
+div#wrapper {
+  height: 800px;
+  width: 800px;
+  margin: auto;
+}
+
+canvas {}
+</style>
+</head>
+<body>
+<div id="wrapper">
+<canvas id="myCanvas" width="800" height="800" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+</div>
+
 <script>
 var exampleSocket = new WebSocket("ws://localhost:8080/stream");
+var t=10;
 
 exampleSocket.onmessage = function (event) {
-  d = event.data
+  var d = event.data;
   var c = document.getElementById("myCanvas");
   var ctx = c.getContext("2d");
 
   ctx.fillStyle = 'rgb('+d+', '+d+', '+d+')';
-  ctx.fillRect(10, 10, 500, 500);
+
+  ctx.fillRect(t, 10, 1, 780);
+  t = t + 1;
+  if (t > 790) {
+    t = 10;
+  }
+
 }
 exampleSocket.onopen = function (event) {
   //  console.log("Sending some stuff to server");
   exampleSocket.send("Here's some text that the server is urgently awaiting!"); 
 };
 </script>
-</head>
-<body>
-<div>
-<canvas id="myCanvas" width="1000" height="1000" style="border:1px solid #000000;">
-</canvas>
-<p>Woop</p>
-<p>Woop</p>
 
-</div>
 </body>
 `
 
-func f(x int) int {
+func g(x int) int {
+	//	return int(rand.Float64() * max)
 	max := 255
 	return int(float64(x)*rand.Float64()+rand.Float64()*50) % max
 }
 
+func f(x int) int {
+	d := rand.Float64() - rand.Float64()
+	return int(float64(x)+d) % 255
+}
+
 func (m *Mind) change() {
-	m.x = f(m.x)
+	m.x = g(m.x)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -74,16 +96,27 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("upgraded to websocket")
 	m := Mind{1000}
+	i := 0
+	msg := ""
 	for {
-		time.Sleep(time.Millisecond * 100)
-		log.Printf("%+v: %q\n", m, string(m.x*'.'))
+		if i%100 == 0 {
+			if i%10000 == 0 {
+				log.Println(msg)
+			}
+			msg = ""
+		}
+		// time.Sleep(time.Millisecond * 1)
+		time.Sleep(time.Nanosecond * 1000 * 10)
+		// log.Printf("%+v: %q\n", m, string(m.x*'.'))
 		m.change()
+		msg += string(m.x * '.')
 		msg := []byte(fmt.Sprintf("%d", m.x))
 		err = conn.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
 			log.Printf("failed to fetch writer from websocket: %v\n", err)
 			return
 		}
+		i += 1
 	}
 }
 
