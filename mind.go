@@ -24,31 +24,14 @@ const IndexHTML = `
 <head>
 <script>
 var exampleSocket = new WebSocket("ws://localhost:8080/stream");
-//var styleEl = document.createElement('style'), styleSheet;
-//document.head.appendChild(styleEl);
 
 exampleSocket.onmessage = function (event) {
   d = event.data
-//  console.log(d);
   var c = document.getElementById("myCanvas");
   var ctx = c.getContext("2d");
 
   ctx.fillStyle = 'rgb('+d+', '+d+', '+d+')';
   ctx.fillRect(10, 10, 500, 500);
-
-//  ctx.fillStyle = 'rgb(127, 127, '+d+')';
-//  ctx.fillRect(30, 30, 500, 500);
-//  ctx.moveTo(0,0);
-//  ctx.lineTo(d,d);
-//  ctx.stroke();
-  //styleSheet = styleEl.sheet;
-//debugger;
-  //styleSheet.deleteRule(1);
-//  styleSheet.insertRule("div { background-color: rgb("+d+", "+d+", "+d+"); }", 0);
-//  styleSheet.insertRule("div { background-color: rgb(25, 75, 125); }", 0);
-
-//  var obj = document.createElement('select');
-//  obj.style.width = event.data+"px";
 }
 exampleSocket.onopen = function (event) {
   //  console.log("Sending some stuff to server");
@@ -83,9 +66,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("got ws request")
-	u := websocket.Upgrader{
-	//HandshakeTimeout: time.Second,
-	}
+	u := websocket.Upgrader{}
 	conn, err := u.Upgrade(w, r, http.Header{})
 	if err != nil {
 		log.Printf("failed to upgrade http request to websocket: %v\n", err)
@@ -96,20 +77,14 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		time.Sleep(time.Millisecond * 100)
 		log.Printf("%+v: %q\n", m, string(m.x*'.'))
-		//		wsw.Write()
 		m.change()
 		msg := []byte(fmt.Sprintf("%d", m.x))
 		err = conn.WriteMessage(websocket.TextMessage, msg)
-		//wsw, err := conn.NextWriter(websocket.TextMessage)
 		if err != nil {
 			log.Printf("failed to fetch writer from websocket: %v\n", err)
-			http.Error(w, "Oops.", http.StatusInternalServerError)
-			// wsw.Close()
 			return
 		}
 	}
-	//	log.Println("wrote to websocket")
-	//	wsw.Write([]byte("hi"))
 }
 
 func main() {
