@@ -25,8 +25,8 @@ const IndexHTML = `
 <head>
 <style>
 div#wrapper {
-  height: 800px;
-  width: 800px;
+  height: 1024px;
+  width: 1024px;
   margin: auto;
 }
 
@@ -35,31 +35,46 @@ canvas {}
 </head>
 <body>
 <div id="wrapper">
-<canvas id="myCanvas" width="800" height="800" style="border:1px solid #d3d3d3;">
+<canvas id="myCanvas" width="1024" height="1024" style="border:1px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.
 </canvas>
 </div>
 
 <script>
 var exampleSocket = new WebSocket("ws://localhost:8080/stream");
-var t=10;
+var t=0;
 
 exampleSocket.onmessage = function (event) {
-  var d = event.data;
+  var d = parseInt(event.data);
   var c = document.getElementById("myCanvas");
   var ctx = c.getContext("2d");
+  var r = g = b = d;
+  r += 1 * t;
+  r = parseInt(r % 255);
+  g += 1.1 * t;
+  g = parseInt(g % 255);
+  b += 1.2 * t;
+  b = parseInt(b % 255);
+  if (t == 0) {
+    console.log(d, r, g, b);
+  }
+  ctx.fillStyle = 'rgb('+
+      r + ', ' +
+      g + ', ' +
+      b + ')';
 
-  ctx.fillStyle = 'rgb('+d+', '+d+', '+d+')';
-
-  ctx.fillRect(t, 10, 1, 780);
+  ctx.fillRect(t, 0, 1, 255);
   t = t + 1;
-  if (t > 790) {
-    t = 10;
+  if (t > 255) {
+    t = 0;
   }
 
 }
 exampleSocket.onopen = function (event) {
   //  console.log("Sending some stuff to server");
+  var c = document.getElementById("myCanvas");
+  var ctx = c.getContext("2d");
+  ctx.scale(4, 4);
   exampleSocket.send("Here's some text that the server is urgently awaiting!"); 
 };
 </script>
@@ -67,24 +82,28 @@ exampleSocket.onopen = function (event) {
 </body>
 `
 
-func g(x int) int {
-	//	return int(rand.Float64() * max)
-	max := 255
-	return int(float64(x)*rand.Float64()+rand.Float64()*50) % max
+const Max = 255
+
+func r(x int) int {
+	return int(rand.Float64() * Max)
+}
+
+func h(x int) int {
+	d := 1 - (rand.Float64()*0.5 - rand.Float64()*0.5)
+	return int(float64(x)*d) % Max
 }
 
 func f(x int) int {
-	d := rand.Float64() - rand.Float64()
-	return int(float64(x)+d) % 255
+	return (x + 3) % Max
 }
 
 func (m *Mind) change() {
-	m.x = g(m.x)
+	m.x = r(m.x)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("got request")
-	fmt.Fprintf(w, IndexHTML)
+	fmt.Fprintln(w, IndexHTML)
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +125,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			runes = ""
 		}
-		time.Sleep(time.Nanosecond * 1000 * 10)
+		time.Sleep(time.Nanosecond * 1000 * 100)
 		m.change()
 		r := m.x * '.'
 		if unicode.IsPrint(rune(r)) {
